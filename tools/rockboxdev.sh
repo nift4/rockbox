@@ -30,7 +30,7 @@ else
 fi
 
 # This is the absolute path to where the script resides.
-rockboxdevdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+rockboxdevdir="$( readlink -f "$( dirname "${BASH_SOURCE[0]}" )" )"
 
 parallel=`nproc`
 if [ $parallel -gt 1 ] ; then
@@ -694,6 +694,10 @@ if [ -n "$missingtools" ]; then
     echo "ROCKBOXDEV: Please install the missing tools and re-run the script."
     exit 1
 fi
+
+dlwhere=$(readlink -f "$dlwhere")
+prefix=$(readlink -f "$prefix")
+builddir=$(readlink -f "$builddir")
 
 echo "Download directory : $dlwhere (set RBDEV_DOWNLOAD or use --dlwhere= to change)"
 echo "Install prefix     : $prefix  (set RBDEV_PREFIX or use --prefix= to change)"
