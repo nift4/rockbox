@@ -284,17 +284,20 @@ run_cmd() {
     fi
 }
 
-# check if the following should be executed or not, depending on RESTART variable:
+# check if the following should be executed or not, depending on RBDEV_RESTART variable:
 # $1=tool
-# If RESTART is empty, always perform step, otherwise only perform is there is
-# an exact match. On the first match, RESTART is reset to "" so that next step
+# If RBDEV_RESTART is empty, always perform step, otherwise only perform is there
+# is an exact match. On the first match, RBDEV_RESTART is reset to "" so that next step
 # are executed
 check_restart() {
-    if [ "$1" = "$RESTART" ]; then
-        RESTART=""
-        true
+    if [ "x$RBDEV_RESTART" = "x" ]; then
+        return 0
+    elif [ "$1" = "$RBDEV_RESTART" ]; then
+        RBDEV_RESTART=""
+        return 0
+    else
+        return 1
     fi
-    [ "$RESTART" = "" ] && true || false
 }
 
 # advanced tool building: create a build directory, run configure, run make
@@ -315,9 +318,9 @@ buildtool() {
     install_opts="$5"
     logfile="$builddir/build-$toolname.log"
 
-    stepname=${RESTART_STEP-$tool}
+    stepname=${RESTART_STEP:-$tool}
     if ! check_restart "$stepname"; then
-        echo "ROCKBOXDEV: Skipping step '$stepname' as requested per RESTART"
+        echo "ROCKBOXDEV: Skipping step '$stepname' as requested per RBDEV_RESTART"
         return
     fi
     echo "ROCKBOXDEV: Starting step '$stepname'"
@@ -589,8 +592,8 @@ build_linux_toolchain () {
     extract "linux-$linux_ver"
     extract "glibc-$glibc_ver"
 
-    # we make it possible to restart a build on error by using the RESTART
-    # variable, the format is RESTART="tool" where tool is the toolname at which
+    # we make it possible to restart a build on error by using the RBDEV_RESTART
+    # variable, the format is RBDEV_RESTART="tool" where tool is the toolname at which
     # to restart (binutils, gcc)
 
     # install binutils, with support for sysroot
@@ -633,7 +636,7 @@ usage () {
     echo "options:"
     echo "  --help              Display this help"
     echo "  --target=LIST       List of targets to build"
-    echo "  --restart=STEP      Restart build at given STEP (same as RESTART env var)"
+    echo "  --restart=STEP      Restart build at given STEP (same as RBDEV_RESTART env var)"
     echo "  --prefix=PREFIX     Set install prefix (same as RBDEV_PREFIX env var)"
     echo "  --dlwhere=DIR       Set download directory (same as RBDEV_DOWNLOAD env var)"
     echo "  --builddir=DIR      Set build directory (same as RBDEV_BUILD env var)"
@@ -869,7 +872,7 @@ do
 	    extract "libffi-$libffi_ver"
 	    prefix="/usr" buildtool "libffi" "$libffi_ver" \
                "--includedir=/usr/include --host=$target" "" "install DESTDIR=$prefix/$target/sysroot"
-            (cd $prefix/$target/sysroot/usr/include ; ln -s ../lib/libffi-$libffi_ver/include/ffi.h . ;  ln -s ../lib/libffi-$libffi_ver/include/ffitarget.h . )
+            (cd $prefix/$target/sysroot/usr/include ; ln -sf ../lib/libffi-$libffi_ver/include/ffi.h . ;  ln -sf ../lib/libffi-$libffi_ver/include/ffitarget.h . )
 
             # build zlib
 	    zlib_ver="1.2.11"
@@ -883,7 +886,7 @@ do
 	    gettool "glib" "$glib_ver"
 	    extract "glib-$glib_ver"
 	    prefix="/usr" buildtool "glib" "$glib_ver" \
-               "--host=$target --disable-libelf glib_cv_stack_grows=no glib_cv_uscore=no ac_cv_func_posix_getpwuid_r=yes ac_cv_func_posix_getgrgid_r=yes" "" "install DESTDIR=$prefix/$target/sysroot"
+               "--host=$target --with-sysroot=$prefix/$target/sysroot --disable-libelf glib_cv_stack_grows=no glib_cv_uscore=no ac_cv_func_posix_getpwuid_r=yes ac_cv_func_posix_getgrgid_r=yes" "" "install DESTDIR=$prefix/$target/sysroot"
 
             # build expat
 	    expat_ver="2.1.0"
@@ -897,7 +900,7 @@ do
 	    gettool "dbus" "$dbus_ver"
 	    extract "dbus-$dbus_ver"
 	    prefix="/usr" buildtool "dbus" "$dbus_ver" \
-               "--host=$target --includedir=/usr/include --enable-abstract-sockets ac_cv_lib_expat_XML_ParserCreate_MM=yes --disable-systemd --disable-launchd --enable-x11-autolaunch=no --with-x=no -disable-selinux --disable-apparmor --disable-doxygen-docs " "" "install DESTDIR=$prefix/$target/sysroot "
+               "--host=$target --with-sysroot=$prefix/$target/sysroot --includedir=/usr/include --enable-abstract-sockets ac_cv_lib_expat_XML_ParserCreate_MM=yes --disable-systemd --disable-launchd --enable-x11-autolaunch=no --with-x=no -disable-selinux --disable-apparmor --disable-doxygen-docs " "" "install DESTDIR=$prefix/$target/sysroot "
 
 
             ;;
