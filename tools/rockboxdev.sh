@@ -212,7 +212,7 @@ gettool() {
             ;;
 
         zlib)
-            url="https://zlib.net"
+            url="https://www.zlib.net/fossils"
             ext="tar.gz"
             ;;
 
